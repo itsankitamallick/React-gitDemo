@@ -1,0 +1,56 @@
+.table-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 20px;
+    height: 100vh;
+    margin-right: 20px;
+    align-content: center;
+  }
+  
+  
+  .row-button-container {
+    margin-bottom: 20px;
+  }
+  
+  .add-row-button {
+    
+    margin-left: 1px;
+  }
+  
+  .table-wrapper {
+    position: relative;
+  }
+  
+  .add-column-button {
+    position: absolute;
+    right: 19px;
+    
+  }
+  
+  .thread-table {
+    border-collapse: collapse;
+    width: 100%;
+    align-content: center;
+  }
+  
+  .thread-table td {
+    border: 2px solid black;
+    padding: 8px;
+    align-items: center;
+  }
+  
+  .thread-table input {
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    outline: none;
+    font-size: 14px;
+  }
+  .mergecell{
+    margin-top: 20px;
+  
+  }
+  
+  
+  

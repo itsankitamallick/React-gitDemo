@@ -1,23 +1,37 @@
-import logo from './logo.svg';
+
+import React, { useState } from 'react';
 import './App.css';
+import Table from './Table';
+
 
 function App() {
+  const [showTable, setShowTable] = useState(false);
+
+  const handleTableButtonClick = () => {
+    setShowTable(true);
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <div className="sidebar-section">
+        <Sidebar onTableButtonClick={handleTableButtonClick} />
+      </div>
+      {showTable && (
+        <div className="table-section">
+          <Table />
+          
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Sidebar({ onTableButtonClick }) {
+  return (
+    <div className="Sidebar">
+      <button className="button" onClick={onTableButtonClick}>
+        Show Table
+      </button>
     </div>
   );
 }
