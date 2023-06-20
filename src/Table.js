@@ -1,13 +1,38 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import $ from 'jquery';
 import './Table.css';
 
 const Table = () => {
   const [rows, setRows] = useState(1);
   const [columns, setColumns] = useState(2);
   const [tableData, setTableData] = useState([['', ''], ['', '']]);
-  const [selectedCells, setSelectedCells] = useState([]);
-  const [isMouseDown, setIsMouseDown] = useState(false);
-  const startCellRef = useRef(null);
+  const [startCell, setStartCell] = useState(null);
+  const [endCell, setEndCell] = useState(null);
+
+  useEffect(() => {
+    $("td").unbind("mousedown").bind("mousedown", function() {
+      $("table td").css("background-color", "");
+      const targetCell = $(this);
+      targetCell.css("background-color", "green");
+      const rowIndex = targetCell.parent().index();
+      const colIndex = targetCell.index();
+      setStartCell({ rowIndex, colIndex });
+    });
+
+    $("td").unbind("mouseup").bind("mouseup", function() {
+      const targetCell = $(this);
+      targetCell.css("background-color", "green");
+      const rowIndex = targetCell.parent().index();
+      const colIndex = targetCell.index();
+      setEndCell({ rowIndex, colIndex });
+    });
+
+    $("#btMerge").click(function() {
+      mergeCells(startCell, endCell);
+      setStartCell(null);
+      setEndCell(null);
+    });
+  }, [startCell, endCell]);
 
   const handleAddRow = () => {
     setRows(rows + 1);
@@ -31,112 +56,43 @@ const Table = () => {
     setTableData(updatedData);
   };
 
-  const handleDeleteSelectedCells = () => {
-    const updatedData = tableData.map((row, rowIndex) =>
-      row.map((cell, colIndex) =>
-        isSelectedCell(rowIndex, colIndex) ? '' : cell
-      )
-    );
+  const handleDeleteRow = (rowIndex) => {
+    setRows(rows - 1);
+    const updatedData = tableData.filter((row, index) => index !== rowIndex);
     setTableData(updatedData);
-    setSelectedCells([]);
   };
 
-  const handleCellMouseDown = (rowIndex, colIndex) => {
-    setIsMouseDown(true);
-    startCellRef.current = { rowIndex, colIndex };
-    setSelectedCells([{ rowIndex, colIndex }]);
-  };
+  const mergeCells = (startCell, endCell) => {
+    if (startCell && endCell) {
+      const { rowIndex: startX, colIndex: startY } = startCell;
+      const { rowIndex: endX, colIndex: endY } = endCell;
 
-  const handleCellMouseEnter = (rowIndex, colIndex) => {
-    if (isMouseDown) {
-      const startCell = startCellRef.current;
-      const endCell = { rowIndex, colIndex };
-      const selected = getSelectedCells(startCell, endCell);
-      setSelectedCells(selected);
-    }
-  };
+      const minX = Math.min(startX, endX);
+      const maxX = Math.max(startX, endX);
+      const minY = Math.min(startY, endY);
+      const maxY = Math.max(startY, endY);
 
-  const handleCellMouseUp = () => {
-    setIsMouseDown(false);
-    startCellRef.current = null;
-  };
+      const startTR = $("table tr").eq(minX);
+      const startTD = $("td", startTR).eq(minY);
+      const rowspan = maxX - minX + 1;
+      const colspan = maxY - minY + 1;
 
-  const handleMergeCells = () => {
-    if (selectedCells.length < 2) {
-      // You need at least two cells selected for merging
-      return;
-    }
+      startTD.attr("rowspan", rowspan).attr("colspan", colspan);
 
-    const minX = Math.min(...selectedCells.map((cell) => cell.rowIndex));
-    const maxX = Math.max(...selectedCells.map((cell) => cell.rowIndex));
-    const minY = Math.min(...selectedCells.map((cell) => cell.colIndex));
-    const maxY = Math.max(...selectedCells.map((cell) => cell.colIndex));
-
-    const mergedValue = tableData[minX][minY];
-    const mergedRowSpan = maxX - minX + 1;
-    const mergedColSpan = maxY - minY + 1;
-
-    const mergedCell = {
-      rowIndex: minX,
-      colIndex: minY,
-      rowSpan: mergedRowSpan,
-      colSpan: mergedColSpan,
-      value: mergedValue,
-    };
-
-    const updatedData = tableData.map((row, rowIndex) => {
-      if (rowIndex >= minX && rowIndex <= maxX) {
-        return row.map((cell, colIndex) => {
-          if (colIndex >= minY && colIndex <= maxY) {
-            return colIndex === minY && rowIndex === minX ? mergedValue : null;
-          }
-          return cell;
-        });
-      }
-      return row;
-    });
-
-    const mergedCells = [
-      mergedCell,
-      ...selectedCells.filter(
-        (cell) => cell.rowIndex !== minX || cell.colIndex !== minY
-      ),
-    ];
-
-    // Update the `tableData` state
-    setTableData(updatedData);
-
-    // Set the `selectedCells` state to the merged cells
-    setSelectedCells(mergedCells);
-  };
-
-  const getSelectedCells = (startCell, endCell) => {
-    const minX = Math.min(startCell.rowIndex, endCell.rowIndex);
-    const maxX = Math.max(startCell.rowIndex, endCell.rowIndex);
-    const minY = Math.min(startCell.colIndex, endCell.colIndex);
-    const maxY = Math.max(startCell.colIndex, endCell.colIndex);
-
-    const selected = [];
-    for (let i = minX; i <= maxX; i++) {
-      for (let j = minY; j <= maxY; j++) {
-        selected.push({ rowIndex: i, colIndex: j });
+      for (let i = minX; i <= maxX; i++) {
+        for (let j = minY; j <= maxY; j++) {
+          if (i === minX && j === minY) continue;
+          const selectTR = $("table tr").eq(i);
+          $("td", selectTR).eq(j).hide();
+        }
       }
     }
-    return selected;
   };
 
   const renderTable = () => {
     return tableData.map((row, rowIndex) => {
       const rowData = row.map((cellData, colIndex) => (
-        <td
-          key={colIndex}
-          onMouseDown={() => handleCellMouseDown(rowIndex, colIndex)}
-          onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
-          onMouseUp={handleCellMouseUp}
-          rowSpan={getRowSpan(rowIndex, colIndex)}
-          colSpan={getColSpan(rowIndex, colIndex)}
-          className={isSelectedCell(rowIndex, colIndex) ? 'selected' : ''}
-        >
+        <td key={colIndex}>
           <input
             type="text"
             value={cellData || ''}
@@ -144,28 +100,15 @@ const Table = () => {
           />
         </td>
       ));
-      return <tr key={rowIndex}>{rowData}</tr>;
+      return (
+        <tr key={rowIndex}>
+          {rowData}
+          <td>
+            <button onClick={() => handleDeleteRow(rowIndex)}>X</button>
+          </td>
+        </tr>
+      );
     });
-  };
-
-  const isSelectedCell = (rowIndex, colIndex) => {
-    return selectedCells.some(
-      (cell) => cell.rowIndex === rowIndex && cell.colIndex === colIndex
-    );
-  };
-
-  const getRowSpan = (rowIndex, colIndex) => {
-    const cell = selectedCells.find(
-      (cell) => cell.rowIndex === rowIndex && cell.colIndex === colIndex
-    );
-    return cell ? cell.rowSpan : 1;
-  };
-
-  const getColSpan = (rowIndex, colIndex) => {
-    const cell = selectedCells.find(
-      (cell) => cell.rowIndex === rowIndex && cell.colIndex === colIndex
-    );
-    return cell ? cell.colSpan : 1;
   };
 
   return (
@@ -179,17 +122,9 @@ const Table = () => {
       <button className="add-row-button" onClick={handleAddRow}>
         +
       </button>
-     
-        <button className="delete-cell-button" onClick={handleDeleteSelectedCells}>
-          Delete
-        </button>
-     
-      <button className="merge-cell-button" onClick={handleMergeCells}>
-        Merge
-      </button>
+      <button id="btMerge">Merge Cells</button>
     </div>
   );
 };
 
 export default Table;
-

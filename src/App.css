@@ -41,13 +41,14 @@ body{
   padding: 5px;
 }
 
+
 .content-section {
+  display: flex;
   flex: 2;
   border: 2px solid black;
   padding: 20px
  
-  
-  
+
 }
 .table-section {
   border: 2px solid black; 
@@ -56,11 +57,6 @@ body{
   margin-top: 7px;
 }
 
-.selected {
-  background-color:#ffd800;
-  color:#ff0000
-  
-}
 
 
 
